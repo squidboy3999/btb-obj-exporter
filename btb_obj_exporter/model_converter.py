@@ -2,6 +2,7 @@ import fbx
 import logging
 import sys
 import os
+import shutil
 
 class ModelConvertor:
 
@@ -35,28 +36,55 @@ class ModelConvertor:
             for file in files:
                 file_path=os.path.join(root_sub,file)
                 print(file_path)
-                results.append(self.action_selector(file_path))
+                results.append(self.action_selector(file_path,file))
         return results
 
-    def action_selector(self,file_path):
-        if '.fbx' in file_path or '.FBX' in file_path:
-            self.fbx2obj_maker(file_path)
+    def action_selector(self,file_path,file):
+        if '.fbx' in file or '.FBX' in file:
+            self.fbx2obj_maker(file_path,file)
             return file_path+'-FBX2OBJ'
 
-    def fbx2obj_maker(self,fbx_path):                                                                                          
+    def fbx2obj_maker(self,fbx_path,file):                                                                                          
         manager = fbx.FbxManager.Create()
         scene = fbx.FbxScene.Create(manager, "")                                                                                 
         importer = fbx.FbxImporter.Create(manager, "")                                                                       
         importstat = importer.Initialize(fbx_path, -1)
-        importstat = importer.Import(scene)                                                                                                 
+        importstat = importer.Import(scene)
+        mode=0o666
+        obj_path=self.fbx_to_new_ext(fbx_path,'/')
+        if not os.path.exists(obj_path):
+            os.mkdir(obj_path,mode)                                                                                                 
         exporter = fbx.FbxExporter.Create(manager, "")                                                                          
-        exportstat = exporter.Initialize(self.fbx_to_obj_ext(fbx_path), -1)
+        exportstat = exporter.Initialize(self.fbx_to_new_ext(obj_path+file,'.obj'), -1)
         exportstat = exporter.Export(scene)
+        fbm_name=self.fbx_to_new_ext(fbx_path,'.fbm')
+        file_names = os.listdir(fbm_name)
+        for file_name in file_names:
+            shutil.move(os.path.join(fbm_name, file_name), obj_path)
+        if os.path.exists(fbm_name) and os.path.isdir(fbm_name):
+            shutil.rmtree(fbm_name)
+        if os.path.exists(self.fbx_to_new_ext(fbx_path,'.meta')):
+            os.remove(self.fbx_to_new_ext(fbx_path,'.meta'))
         os.remove(fbx_path)
 
-    def fbx_to_obj_ext(self, fbx_path):
-        new_path=fbx_path.replace(".fbx",".obj")
-        return new_path.replace(".FBX",".obj")
+    def fbx_to_new_ext(self,fbx_path,new):
+        new_path=fbx_path.replace(".fbx",new)
+        return new_path.replace(".FBX",new)
+    
+#mode = 0o666
+  
+# Path 
+#path = os.path.join(parent_dir, directory) 
+  
+# Create the directory 
+# 'GeeksForGeeks' in 
+# '/home / User / Documents' 
+# with mode 0o666 
+#os.mkdir(path, mode) 
+
+    #def fbx_to_obj_ext(self, fbx_path):
+    #    new_path=fbx_path.replace(".fbx",".obj")
+    #    return new_path.replace(".FBX",".obj")
 
 #USAGE = f"Usage: python {sys.argv[0]} [--help] | parent_dir ]"
 USAGE=""
